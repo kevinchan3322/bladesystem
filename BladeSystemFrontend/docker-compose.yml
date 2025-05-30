@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bladesystem-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./BladeSystemBackend
+      dockerfile: Dockerfile
+    container_name: bladesystem-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DB_NAME=bladesystem
+      - MONGODB_USER=${MONGODB_USER:-blade_user}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-blade_password}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      - TZ=Asia/Taipei
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:6.0
+    container_name: bladesystem-mongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD:-admin_password}
+      - MONGO_INITDB_DATABASE=bladesystem
+    volumes:
+      - mongodb_data:/data/db
+      - ./BladeSystemBackend/mongodb/mongod.conf:/etc/mongod.conf
+      - ./BladeSystemBackend/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    command: ["mongod", "--config", "/etc/mongod.conf"]
+
+volumes:
+  mongodb_data:
+    name: bladesystem-mongodb-data
+  backend_uploads:
+    name: bladesystem-backend-uploads
+  backend_logs:
+    name: bladesystem-backend-logs 

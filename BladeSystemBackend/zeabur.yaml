@@ -1,0 +1,41 @@
+services:
+  - name: bladesystem-mongodb
+    type: mongodb
+    plan: starter
+    env:
+      - name: MONGO_INITDB_ROOT_USERNAME
+        value: ${MONGODB_ROOT_USER}
+      - name: MONGO_INITDB_ROOT_PASSWORD
+        value: ${MONGODB_ROOT_PASSWORD}
+      - name: MONGO_INITDB_DATABASE
+        value: bladesystem
+    volumes:
+      - name: mongodb-data
+        mountPath: /data/db
+      - name: mongodb-config
+        mountPath: /etc/mongod.conf
+        source: ./mongodb/mongod.conf
+      - name: mongodb-init
+        mountPath: /docker-entrypoint-initdb.d
+        source: ./mongodb/init-mongo.js
+
+  - name: bladesystem-backend
+    type: web
+    env:
+      - name: NODE_ENV
+        value: production
+      - name: MONGODB_URI
+        fromService: bladesystem-mongodb
+        value: ${MONGODB_HOST}
+      - name: MONGODB_PORT
+        value: "27017"
+      - name: MONGODB_DB_NAME
+        value: bladesystem
+      - name: MONGODB_USER
+        value: ${MONGODB_USER}
+      - name: MONGODB_PASSWORD
+        value: ${MONGODB_PASSWORD}
+    buildCommand: npm install && pip install -r requirements.txt
+    startCommand: npm start
+    depends:
+      - bladesystem-mongodb 
